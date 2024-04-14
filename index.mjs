@@ -21,6 +21,7 @@ const compareFields = [
   "market_dominance",
 ];
 
+// simple helper function to convert possible strings to numbers
 function number(num) {
   if (typeof num !== "number") {
     return (((num || "") + "").replace(/[^0-9.-]/gi, "") || 0) * 1;
@@ -29,6 +30,7 @@ function number(num) {
   }
 }
 
+// basic functionality of converting social movement most recent 24 hours to previous 24 hours into a 1.5 score
 function score_from_social_movement(ts, key) {
   let sum_previous = 0;
   let sum_current = 0;
@@ -61,8 +63,11 @@ function score_from_social_movement(ts, key) {
   return 1 + parseFloat(((percent_change / 2) * 4).toFixed(1));
 }
 
+// simple averaging helper function
 const average = (data) =>
   data.reduce((sum, value) => sum + value) / data.length;
+
+// basic functionality of correlating social movement with price movement into a 1-5 score
 function get_correlation_rank(arr1, arr2) {
   const avg1 = average(arr1);
   const avg2 = average(arr2);
@@ -118,8 +123,8 @@ async function v4_request(output) {
       },
     }
   ).then((res) => res.json());
-  console.log("coin", coin);
-  console.log("topicData", topicData);
+  // console.log("coin", coin);
+  // console.log("topicData", topicData);
 
   // neutral blank/empty data topics
   if (!topicData.data?.num_posts) {
