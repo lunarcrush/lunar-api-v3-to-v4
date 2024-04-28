@@ -106,6 +106,56 @@ async function v3_request(output) {
   return output;
 }
 
+function std(arr) {
+  const n = arr.length;
+  const mean = arr.reduce((a, b) => a + b) / n;
+  return Math.sqrt(
+    arr.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / n
+  );
+}
+
+function zscore(arr) {
+  return (arr[-1] - average(arr)) / std(arr);
+}
+
+function extract_metrics_from_v3(input) {
+  const metrics = {};
+
+  metrics['total_tweet_volume'] = [
+    'tweet_sentiment1',
+    'tweet_sentiment2',
+    'tweet_sentiment3',
+    'tweet_sentiment4',
+    'tweet_sentiment5',
+  ].reduce((acc, k) => acc + input[k][-1], 0);
+
+  metrics['total_tweet_engagement'] = [
+    'tweet_sentiment_impact1',
+    'tweet_sentiment_impact2',
+    'tweet_sentiment_impact3',
+    'tweet_sentiment_impact4',
+    'tweet_sentiment_impact5',
+  ].reduce((acc, k) => acc + input[k][-1], 0);
+
+  for (let i = 1; i < 6; i++) {
+    const volume = input[`tweet_sentiment${i}`];
+    const engagement = input[`tweet_sentiment_impact${i}`];
+
+    metrics[`tweet_volume_${i}_zscore`] = zscore(volume);
+    metrics[`tweet_engagement_${i}_zscore`] = zscore(engagement);
+    metrics[`engagement_rate_${i}`] = volume[-1] / engagement[-1];
+
+    metrics[`volume_type_share_${i}`] = volume[-1] / metrics['total_tweet_volume'];
+    metrics[`engagement_type_share_${i}`] = engagement[-1] / metrics['total_tweet_engagement'];
+  }
+
+  // TODO
+  // Social volume dominance: Percent of tweet volume that a given token has
+  // over the sum of volume from whole universe
+
+  return metrics;
+}
+
 async function v4_request(output) {
   const list = await fetch(`https://lunarcrush.com/api4/public/coins/list/v2`, {
     headers: {
@@ -260,6 +310,9 @@ async function main() {
 
   console.log("getting v3 time series");
   await v3_request(output);
+
+  extract_metrics_from_v3(output);
+
   console.log("getting v4 time series");
   await v4_request(output);
 
